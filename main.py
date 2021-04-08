@@ -107,31 +107,33 @@ Pp = Cg/Npp   # #Distancia entre porticos
 # PONTOS BANZOS ESQUERDO E DIREITO
 # ------------BANZOS ESQUERDA---------------
 # Ponto x=0
-# coord(1,:)=[0 Ag];
-a = np.array([[0, 1, 2, 3], [0, 4, 5, 6]])
-# print(a)
-a = np.append(a, [[50, 60, 70, 0]], axis=0)
-# b = a[1, 1]
-# print(a)
-# print(b)
-a = np.append(a, [[500, 600, 700, 0]], axis=0)
+coord = np.array([[0, Ag]])
+coord = np.append(coord, [[0, Ag+e]], axis=0)
 
-# print(a)
+# Ponto x = L
+coord = np.append(coord, [[L, Ag]], axis=0)
+coord = np.append(coord, [[L, Ag+e]], axis=0)
 
+# Banzo Inferior
+for i in range(3, Np+2):
+    coordBIe = np.array([[a, Ag]])
+    coordBIe = np.append(coordBIe, [[a+b, c+Ag]], axis=0)
+    coordBIe = np.append(coordBIe, [[b+a+Kp*(i-2), c+Ag+(i-2)*Ap]], axis=0)
 
-# coord = np.array([0, Ag+e])
+print(f'{coordBIe= }')
 
-
-# print('coord'=str(coord))
-
-aa=1
-
-def pr(variavel):
-    print(str(variavel),'==',str(variavel))
-
-pr(aa)
-    # coord(2,:)=[0 Ag+e];
-    # terca(1,:)=coord(2,:); %Capturando terça inicial - X ESQUERDO
+# Banzo superior
 
 
-    # engregion
+# ii=2;
+# it=2;
+# for ii in range(2, Np+2):
+#     coord_BSe=(1,:)=[a Ag+h];
+#     coord_BSe(ii,:)=[a+Kp*(ii-1) h+Ag+Ap*(ii-1)];
+#         if mod(ii,2)==1                  #Capturando terça BS - XY ESQUERDO
+#         terca(it,:)=coord_BSe(ii,:);     #Capturando terça BS - XY ESQUERDO
+#         it=it+1;                         #Capturando terça BS
+#         end                              #Capturando terça BS
+# ii=ii+1;
+# end
+#     # engregion
