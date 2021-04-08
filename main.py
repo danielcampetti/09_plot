@@ -1,15 +1,15 @@
-#Programa da interação entre Python e PowerBi
+# Programa da interação entre Python e PowerBi
 
-#region import
+# region import
 from PIL import ImageTk, Image
 import tkinter as tk
 import matplotlib.pyplot as plt
 import math
 import numpy as np
 import pandas as pd
-#endregion
+# endregion
 
-#region dados iniciais
+# region dados iniciais
 L = 10  # largura total do galpao
 Ag = 5  # altura do pé direito do galpao
 At = 1  # altura do pé direito do telhado
@@ -21,9 +21,9 @@ Cg = 15  # Comprimento do galpao
 Npo = 3  # Numero de porticos
 T1 = 0.05
 T2 = 0.04
-#endregion
+# endregion
 
-#region soluções iniciais
+# region soluções iniciais
 Np = Nn*2
 d = dT/2
 Kt = (L/2)-a-d
@@ -37,22 +37,49 @@ j = math.tan(Alpha)*d
 Ap = (At-c)/Np
 K = Kt-b
 Kp = K/Np  # valor do passo de comprimento em 'x' de cada meio V
-#endregion
+# endregion
 
-root_largura = 700
-root_comprimento = 800
-root = tk.Tk()
-root.title("Aplicativo Nieto Engenharia")
-root.iconbitmap('.//img//logo.ico')
-canvas = tk.Canvas(root, height=root_largura, width=root_comprimento)
-canvas.pack()
+#region ----------------------------- Criando listas
 
-frame1 = tk.Frame(root, bg='#abd1db')
-frame1.place(relx=0.1, rely=0.1, relwidth=0.8, relheight=0.8)
+x=[1,2,3]
 
-# teste
-button_quit = tk.Button(frame1, text="Fechar Programa", command=root.quit)
-button_quit.pack()
 
-root.mainloop()
-print('-------------------Complete--------------------------------')
+
+
+# endregion
+
+
+# # region ----------------------------------GUI
+# root_largura = 700
+# root_comprimento = 800
+# root = tk.Tk()
+# root.title("Aplicativo Nieto Engenharia")
+# root.iconbitmap('.//img//logo.ico')
+# canvas = tk.Canvas(root, height=root_largura, width=root_comprimento)
+# canvas.pack()
+
+# frame1 = tk.Frame(root, bg='#abd1db')
+# frame1.place(relx=0, rely=0, relwidth=1, relheight=1)
+
+# def function_resposta(entrada1):
+#     print('Botao calc clicado',entrada1)
+#     return str(entrada1)
+
+# def function_calc(entrada1):
+#     saida1['text']=function_resposta(entrada1)
+
+# entrada1  =  tk.Entry(frame1, bg='#8bcde0')
+# entrada1.grid(row=0, column=1)
+
+# saida1  =  tk.Label(frame1, bg='#8bcde0')
+# saida1.grid(row=1, column=1,ipadx=50,ipady=50)
+
+
+# button_calc = tk.Button(frame1, text="Calcular", command=lambda: function_calc(entrada1.get()))
+# button_calc.grid(row=3,  column=1,ipadx=50,ipady=50)
+
+# button_quit = tk.Button(frame1, text="Fechar Programa", command=root.quit)
+# button_quit.place(x=0,y=root_largura-30)
+# print('-------------------Complete--------------------------------')
+# root.mainloop()
+# # endregion
