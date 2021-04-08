@@ -42,17 +42,16 @@ j = math.tan(Alpha)*d
 Ap = (At-c)/Np
 K = Kt-b
 Kp = K/Np  # valor do passo de comprimento em 'x' de cada meio V
-Npp=(Npo-2)   #Numero de passos comprimento de cada portico
+Npp = (Npo-2)  # Numero de passos comprimento de cada portico
 
-if Npp==0:
-    Npp==1
-Pp=Cg/Npp   # #Distancia entre porticos
+if Npp == 0:
+    Npp == 1
+Pp = Cg/Npp   # #Distancia entre porticos
 
 
 # endregion
 
-# region ----------------------------- Criando listas
-
+# region ----------------- Criando LabelFrame and plot
 
 
 # x2 = np.array(range(50))
@@ -100,16 +99,39 @@ Pp=Cg/Npp   # #Distancia entre porticos
 # print('-------------------Complete--------------------------------')
 # root.mainloop()
 
-#endregion
-
-# a=1
-# b=2
-
-# if a==1:
-#     print('a=1')
+# endregion
 
 
+# region
+
+# PONTOS BANZOS ESQUERDO E DIREITO
+# ------------BANZOS ESQUERDA---------------
+# Ponto x=0
+# coord(1,:)=[0 Ag];
+a = np.array([[0, 1, 2, 3], [0, 4, 5, 6]])
+# print(a)
+a = np.append(a, [[50, 60, 70, 0]], axis=0)
+# b = a[1, 1]
+# print(a)
+# print(b)
+a = np.append(a, [[500, 600, 700, 0]], axis=0)
+
+# print(a)
 
 
+# coord = np.array([0, Ag+e])
 
 
+# print('coord'=str(coord))
+
+aa=1
+
+def pr(variavel):
+    print(str(variavel),'==',str(variavel))
+
+pr(aa)
+    # coord(2,:)=[0 Ag+e];
+    # terca(1,:)=coord(2,:); %Capturando terça inicial - X ESQUERDO
+
+
+    # engregion
