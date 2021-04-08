@@ -50,7 +50,7 @@ canvas.pack()
 frame1 = tk.Frame(root, bg='#abd1db')
 frame1.place(relx=0.1, rely=0.1, relwidth=0.8, relheight=0.8)
 
-
+# teste
 button_quit = tk.Button(frame1, text="Fechar Programa", command=root.quit)
 button_quit.pack()
 
