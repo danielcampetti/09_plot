@@ -78,7 +78,6 @@ ax1 = figure1.add_subplot(111).plot(x2,y2)
 canvas = FigureCanvasTkAgg(figure1, frame1)
 canvas.draw()
 canvas.get_tk_widget().grid(row=1, column=0, sticky='N')
-ax1.set_title('Initial data')
 
 # toolbar = NavigationToolbar2Tk(canvas, root)
 # toolbar.update()
@@ -88,8 +87,9 @@ ax1.set_title('Initial data')
 #     key_press_handler(event, canvas, toolbar)
 # canvas.mpl_connect('key', on_key)
 
-
-
+toolbarFrame = tk.Frame(frame2)
+toolbarFrame.grid(row=22, column=4)
+toolbar = NavigationToolbar2Tk(canvas, toolbarFrame)
 
 button_quit = tk.Button(frame1, text="10", command=root.quit, padx=50, pady=50)
 button_quit.grid(row=0, column=0, sticky='N')
