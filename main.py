@@ -1,8 +1,12 @@
 #Programa da interação entre Python e PowerBi
 
 #region import
+from PIL import ImageTk, Image
+import tkinter as tk
 import matplotlib.pyplot as plt
 import math
+import numpy as np
+import pandas as pd
 #endregion
 
 #region dados iniciais
@@ -34,3 +38,21 @@ Ap = (At-c)/Np
 K = Kt-b
 Kp = K/Np  # valor do passo de comprimento em 'x' de cada meio V
 #endregion
+
+root_largura = 700
+root_comprimento = 800
+root = tk.Tk()
+root.title("Aplicativo Nieto Engenharia")
+root.iconbitmap('.//img//logo.ico')
+canvas = tk.Canvas(root, height=root_largura, width=root_comprimento)
+canvas.pack()
+
+frame1 = tk.Frame(root, bg='#abd1db')
+frame1.place(relx=0.1, rely=0.1, relwidth=0.8, relheight=0.8)
+
+
+button_quit = tk.Button(frame1, text="Fechar Programa", command=root.quit)
+button_quit.pack()
+
+root.mainloop()
+print('-------------------Complete--------------------------------')
