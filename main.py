@@ -41,22 +41,35 @@ Kp = K/Np  # valor do passo de comprimento em 'x' de cada meio V
 
 #region ----------------------------- Criando listas
 
-x=[1,2,3]
+x = [[1, 2, 3], [4, 5, 6]]
+
+x1 = x[0][2]
+print(x1)
+
+x2 = np.array(range(50))
+y2 = x2*3
+print(y2)
 
 
+plt.title('PLot1')
+plt.plot(x2, y2)
+plt.xlabel('entry a')
+plt.ylabel('entry b')
+plt.axis([0, 6, 0, 20])
+plt.show()
 
 
-# endregion
+root_largura = 700
+root_comprimento = 800
+root = tk.Tk()
+root.title("Aplicativo Nieto Engenharia")
+root.iconbitmap('.//img//logo.ico')
+
+fig = Figure(figsize=(5, 4), dpi=100)
 
 
-# # region ----------------------------------GUI
-# root_largura = 700
-# root_comprimento = 800
-# root = tk.Tk()
-# root.title("Aplicativo Nieto Engenharia")
-# root.iconbitmap('.//img//logo.ico')
-# canvas = tk.Canvas(root, height=root_largura, width=root_comprimento)
-# canvas.pack()
+canvas = tk.Canvas(root, height=root_largura, width=root_comprimento)
+canvas.pack()
 
 # frame1 = tk.Frame(root, bg='#abd1db')
 # frame1.place(relx=0, rely=0, relwidth=1, relheight=1)
