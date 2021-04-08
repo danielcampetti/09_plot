@@ -1,0 +1,1657 @@
+classdef app3_02 < matlab.apps.AppBase
+
+    % Properties that correspond to app components
+    properties (Access = public)
+        UIFigure                  matlab.ui.Figure
+        Nieto                     matlab.ui.container.Panel
+        DadosIniciaisButton       matlab.ui.control.Button
+        LButton                   matlab.ui.control.Button
+        AgButton                  matlab.ui.control.Button
+        Label                     matlab.ui.control.Label
+        IN_At                     matlab.ui.control.NumericEditField
+        AtButton                  matlab.ui.control.Button
+        IN_Ag                     matlab.ui.control.NumericEditField
+        IN_L                      matlab.ui.control.NumericEditField
+        Label_2                   matlab.ui.control.Label
+        IN_Nn                     matlab.ui.control.NumericEditField
+        NnButton                  matlab.ui.control.Button
+        Label_3                   matlab.ui.control.Label
+        IN_dT                     matlab.ui.control.NumericEditField
+        dTButton                  matlab.ui.control.Button
+        Label_4                   matlab.ui.control.Label
+        IN_h                      matlab.ui.control.NumericEditField
+        hButton                   matlab.ui.control.Button
+        Label_5                   matlab.ui.control.Label
+        IN_a                      matlab.ui.control.NumericEditField
+        aButton                   matlab.ui.control.Button
+        Label_6                   matlab.ui.control.Label
+        IN_Npo                    matlab.ui.control.NumericEditField
+        NpoButton                 matlab.ui.control.Button
+        Label_7                   matlab.ui.control.Label
+        IN_Cg                     matlab.ui.control.NumericEditField
+        CgButton                  matlab.ui.control.Button
+        ProjetoBanzosParalelosTipo1Label  matlab.ui.control.Label
+        PeaseMedidasLabel         matlab.ui.control.Label
+        Tabela_Med_Tesoura        matlab.ui.control.Table
+        SignificadoTextAreaLabel  matlab.ui.control.Label
+        SigTextArea               matlab.ui.control.TextArea
+        DistnciaentreTerasLabel   matlab.ui.control.Label
+        TabelaTercas              matlab.ui.control.TextArea
+        VERPORTICOButton          matlab.ui.control.Button
+        Button_L                  matlab.ui.control.Button
+        VERNPEAButton             matlab.ui.control.Button
+        VERNLIGAOButton           matlab.ui.control.Button
+        VERVISTA3DButton          matlab.ui.control.Button
+        UIaxes1                   matlab.ui.control.UIAxes
+        TabelaValores             matlab.ui.control.Table
+        BarraseValoresLabel       matlab.ui.control.Label
+        VERBARRASButton           matlab.ui.control.Button
+    end
+
+
+    properties (Access = public)
+        L;     % largura total do galpao
+        Ag;    %altura do pé direito do galpao
+        At     ;%altura do pé direito do telhado
+        Nn;    %Numeros de V
+        dT;    %'Meio Comprimento do banzo de contato topo tesouras direitos e esquerdos
+        h;     %Largura da tesoura
+        a;     % Comnprimento a
+        Cg;    %Comprimento do galpao
+        Npo   ;%Numero de porticos
+       
+
+    end
+
+    methods (Access = private)
+    
+             function C=med_compr(app,i1,i2,Ligacoes,PONTOS)  % Medidas Comprimento entre Pontos Linkados
+                i=i1;
+                        for i=i1:1:i2
+                            
+                            %Coletando numero do ponto  
+
+                                nL1=Ligacoes(i,1)           ;%numero do ponto 1 ligado ao ponto 2
+                                nL2=Ligacoes(i,2)           ;%numero do ponto 2
+                            %Buscando coordenadas do ponto 1 e 2    
+                                x1=PONTOS(nL1,2)        ;%Coordenada x ponto nL1
+                                y1=PONTOS(nL1,3)        ;%Coordenada y ponto nL1
+                                x2=PONTOS(nL2,2)        ;%Coordenada x ponto nL2
+                                y2=PONTOS(nL2,3)        ;%Coordenada y ponto nL2
+                                C(i,1)=i                                 ;%Numero da ligacao
+                                C(i,2)= ( (x1-x2)^2 + (y1-y2)^2 )^0.5    ;%Comprimento entre os Pontos nL1 e nL2
+                                i=i+1;
+                        end
+             end
+        
+%% FUNCAO PARA CONSTRUCAO DO PORTICO, GALPAO E ISOMETRICO   
+        function [PONTOS Ligacoes terca terca2a C1 e H Npp CPp P Mt Mtt B]=program(app,L,Ag,At,Nn,dT,h,Nv,Npo,a,Cg,Ny,Nc,Ncs,Ncl)
+                      
+
+   %% SOLUÇÕES INICIAIS %%
+                    Np=Nn*2;
+                    d=dT/2;
+                    Kt= (L/2)-a-d;
+                    Alpha=atand(At/Kt)  ; 
+                    b=sind(Alpha)*h    ;
+                    c=tand(Alpha)*b   ;
+                    e=h-(a*At/Kt)   ;
+                    f=sind(Alpha)*h   ;
+                    j=tand(Alpha)*d  ; 
+                    Ap=(At-c)/Np   ;%valor do passo de comprimento em 'y' de cada meio V
+                    K=Kt-b         ;
+                    Kp=K/Np  ;      %valor do passo de comprimento em 'x' de cada meio V
+                    
+                    Npp=Npo-1   ;%Numero de passos comprimento de cada portico
+                        if Npp==0
+                            Npp=1;
+                        end
+                    CPp=Cg/Npp   ; %Distancia entre porticos
+  %% PONTOS BANZOS ESQUERDO E DIREITO
+                    %------------BANZOS ESQUERDA---------------
+                            %Ponto x=0
+                                coord(1,:)=[0 Ag];
+                                coord(2,:)=[0 Ag+e];           
+                                terca(1,:)=coord(2,:); %Capturando terça inicial - X ESQUERDO
+                            %Ponto x=L
+                                coord2(1,:)=[L Ag];
+                                coord2(2,:)=[L Ag+e];
+                            %Banzo Inferior
+                                i=3;
+                                for i=3:1:Np+2
+                                    coord_BIe(1,:)=[a Ag];
+                                    coord_BIe(2,:)=[a+b c+Ag];
+                                    coord_BIe(i,:)=[(b+a+Kp*(i-2)) c+Ag+((i-2)*Ap)];
+                                i=i+1;
+                                end
+                            %Banzo superior
+                                ii=2;
+                                it=2;
+                                for ii=2:1:Np+1
+                                    coord_BSe(1,:)=[a Ag+h];
+                                    coord_BSe(ii,:)=[a+Kp*(ii-1) h+Ag+Ap*(ii-1)];
+                                        if mod(ii,2)==1                  %Capturando terça BS - XY ESQUERDO
+                                        terca(it,:)=coord_BSe(ii,:);     %Capturando terça BS - XY ESQUERDO
+                                        it=it+1;                         %Capturando terça BS 
+                                        end                              %Capturando terça BS 
+                                        ii=ii+1;
+                                end 
+                    %%------------BANZOS DIREITA---------------
+                                    % Banzo Inferior
+                                    i3=3;
+                                        for i3=3:1:Np+2
+                                            coord_BId(1,:)=[L-a Ag];
+                                            coord_BId(2,:)=[L-a-b Ag+c];
+                                            coord_BId(i3,:)=[L-(b+a+Kp*(i3-2)) (c+Ag+((i3-2)*Ap))];
+                                            i3=i3+1;
+                                        end
+                                    %Banzo superior
+                                    i4=3;
+                                        for i4=2:1:Np+1
+                                            coord_BSd(1,:)=[L-a Ag+h];
+                                            coord_BSd(i4,:)=[L-a-Kp*(i4-1) h+Ag+Ap*(i4-1)];
+                                            i4=i4+1;
+                                        end
+                    %% PONTOS PONTA S E I
+                                        if d==0
+                                            coord_ponta_BI(1,:)=[L/2 Ag+At+j];
+                                        else
+                                            coord_ponta_BI(1,:)=[L/2 Ag+At];
+                                        end
+                                            coord_ponta_BS(1,:)=[L/2 coord_BSe(i3-2,2)+tand(Alpha)*(d)+c];
+                   %MATRIZ TERCAS-----------------                
+                                    terca(it,:)=coord_ponta_BS(1,:);      % TERCA PONTA ESQUERDA
+                                    terca2(:,1)=L/2+(L/2)-terca(:,1) ;    %INVERTENDO E ARRUMANDO X - Capturando terça BS - XY ESQUERDO
+                                    terca2(:,2)=terca(:,2);               %INVERTENDO E ARRUMANDO X - Capturando terça BS - XY ESQUERDO
+                                    terca2a=flipud(terca2)  ;             %INVERTENDO E ARRUMANDO X - Capturando terça BS - XY ESQUERDO
+                                    setappdata(0,'terca',terca);
+                                    H= coord_BSe(i3-2,2)+tand(Alpha)*d+c+h; %Altura maxima da estrutura
+                                    setappdata(0,'H',H);
+                    %CRIANDO MATRIZ PONTOS-----------------
+                    %% CRIANDO MATRIZ PONTOS E PLOT
+                                        PONTOS(:,2)=[coord(:,1);coord_BIe(:,1);coord_BSe(:,1);coord2(:,1);coord_BId(:,1);coord_BSd(:,1);...
+                                            coord_ponta_BI(:,1);coord_ponta_BS(:,1)];
+                                        PONTOS(:,3)=[coord(:,2);coord_BIe(:,2);coord_BSe(:,2);coord2(:,2);coord_BId(:,2);coord_BSd(:,2);...
+                                            coord_ponta_BI(:,2);coord_ponta_BS(:,2)];
+                                        Numero_de_pontos=size(PONTOS,1)-2;
+                                        PONTOS(:,1)= 1:Numero_de_pontos+2 ;
+                    %Preparando matriz Ligacoes-------------------------
+                                        %COLETANDO MEDIDAS-----------------------------------
+                      %% LIGACOES DA PONTA ESQUERDA
+                                      P1=0;
+                                      P=1;
+                                      Pi=3;
+                                      Pii=3;
+                                   Pn=1;
+                                      Ligacoes1(1,:)=[1 2];
+                                            M(1)=med_compr_Unitario(app,1,Ligacoes1,PONTOS);
+                                    Pn=2;         
+                                       Ligacoes1(2,:)=[1 3];
+                                       M(2)=med_compr_Unitario(app,2,Ligacoes1,PONTOS)   ;                     %%%% PEGANDO MEDIDAS
+                                        P=[1;2];
+                                         Pii=[1;2];
+                                    Pn=3;
+                                        Ligacoes1(3,:)=[1 Numero_de_pontos/2-2*Nn];
+                                            M(3)=med_compr_Unitario(app,3,Ligacoes1,PONTOS)   ;                     %%%% PEGANDO MEDIDAS
+                                            [Pi,P,Pii] = contador_nome_peca(app,Ligacoes1(3,1),Pi,Pn,P,Pii);
+                                        Ligacoes1(4,:)=[2 Numero_de_pontos/2-2*Nn];
+                                    Pn=9;
+                                            M(4)=med_compr_Unitario(app,4,Ligacoes1,PONTOS)      ;                  %%%% PEGANDO MEDIDAS
+                                            [Pi,P,Pii] = contador_nome_peca(app,Ligacoes1(4,1),Pi,Pn,P,Pii);
+                                        Ligacoes1(5,:)=[3 Numero_de_pontos/2-2*Nn];
+                                    Pn=4;
+                                            M(5)=med_compr_Unitario(app,5,Ligacoes1,PONTOS)              ;          %%%% PEGANDO MEDIDAS
+                                            [Pi,P,Pii] = contador_nome_peca(app,Ligacoes1(5,1),Pi,Pn,P,Pii);
+                          %Ligacoes_BI
+                                        i2=1;
+                                    Pn=5;
+                                        for i2=i2:1:Nn*2+1
+                                            Ligacoes_BSe(i2,:)=[3+(i2-1) 3+i2];
+                                            MP_BIu(i2,1)=med_compr_Unitario(app,i2,Ligacoes_BSe,PONTOS)    ;%%%% PEGANDO MEDIDAS
+                                            [Pi,P,Pii] = contador_nome_peca(app,MP_BIu(i2,1),Pi,Pn,P,Pii);
+                                            i2=i2+1;
+                                        end
+                                        M(6)=sum(MP_BIu,1)   ;   % SOMANDO MEDIDAS BI
+                            %Ligacoes_BS
+                                    Pn=9;
+                                        i3=1;
+                                        for i3=i3:1:Nn*2
+                                            Ligacoes_BIe(i3,:)=[Ligacoes_BSe(i2-1,2)+(i3-1)+1 Ligacoes_BSe(i2-1,2)+i3+1];
+                                            MP_BS(i3,1)=med_compr_Unitario(app,i3,Ligacoes_BIe,PONTOS)    ;
+                                            [Pi,P,Pii] = contador_nome_peca(app,Ligacoes_BIe(i3,:),Pi,Pn,P,Pii);
+                                            i3=i3+1;
+                                        end  
+                                       M(12)=sum(MP_BS,1)   ;   % SOMANDO MEDIDAS BS
+                          %% PONTA DIREITA
+                                  Pn=1;
+                                        Ligacoes2(1,:)=[Numero_de_pontos/2+1 Numero_de_pontos/2+2];
+%                                         Ligacoes2(1,:)
+                                        M(7)=med_compr_Unitario(app,1,Ligacoes2(1,:),PONTOS)   ; 
+                                        [Pi,P,Pii] = contador_nome_peca(app,Ligacoes2(1,:),Pi,Pn,P,Pii);
+                                  Pn=2;
+                                        Ligacoes2(2,:)=[Numero_de_pontos/2+1 Numero_de_pontos/2+3];
+                                        M(8)=med_compr_Unitario(app,1,Ligacoes2(2,:),PONTOS)   ; 
+                                        [Pi,P,Pii] = contador_nome_peca(app,Ligacoes2(2,:),Pi,Pn,P,Pii);
+                                  Pn=3;
+                                        Ligacoes2(3,:)=[Numero_de_pontos/2+1 Numero_de_pontos-2*Nn];
+                                        M(9)=med_compr_Unitario(app,1,Ligacoes2(3,:),PONTOS)   ; 
+                                        [Pi,P,Pii] = contador_nome_peca(app,Ligacoes2(3,:),Pi,Pn,P,Pii);
+                                  Pn=9;
+                                        Ligacoes2(4,:)=[Numero_de_pontos/2+2 Numero_de_pontos-2*Nn];
+                                        M(10)=med_compr_Unitario(app,1,Ligacoes2(4,:),PONTOS)   ; 
+                                        [Pi,P,Pii] = contador_nome_peca(app,Ligacoes2(4,:),Pi,Pn,P,Pii);
+                                   Pn=5;
+                                        Ligacoes2(5,:)=[Numero_de_pontos/2+3 Numero_de_pontos-2*Nn];
+                                        M(11)=med_compr_Unitario(app,1,Ligacoes2(5,:),PONTOS)   ; 
+                                        [Pi,P,Pii] = contador_nome_peca(app,Ligacoes2(5,:),Pi,Pn,P,Pii);                             
+                              % Ligacoes_BS_DIREITO
+                                        i2=1;
+                                        Pn=5;
+                                        for i2=i2:1:Nn*2+1
+                                            Ligacoes_BSd(i2,:)=[(Numero_de_pontos/2)+3+(i2-1) (Numero_de_pontos/2+3)+i2];
+                                            [Pi,P,Pii] = contador_nome_peca(app,Ligacoes_BSd(i2,:),Pi,Pn,P,Pii);
+                                            i2=i2+1;
+                                        end
+                              %Ligacoes_BI_DIREITO
+                                        Pn=9;
+                                        i3=1;
+                                        for i3=i3:1:Nn*2
+                                            Ligacoes_BId(i3,:)=[Ligacoes_BSd(i2-1,2)+(i3-1)+1 Ligacoes_BSd(i2-1,2)+i3+1]; 
+                                            [Pi,P,Pii] = contador_nome_peca(app,Ligacoes_BId(i3,:),Pi,Pn,P,Pii);
+                                            MP_BSdu(i3,1)=med_compr_Unitario(app,i3,Ligacoes_BSd,PONTOS)     ;% PEGANDO MEDIDA
+                                            i3=i3+1;
+                                        end
+                        %% LIGACOES DE DIAGONAIS
+                        %Lig_De - Diagonais Esquerda - Colunas
+                               i4=1;
+                               Pn=6;
+                                    while i4<=Np %Coluna 1
+                                            Lig_De(i4,1)=5+(i4-1) ; 
+                                            Lig_De(i4+1,1)=5+(i4-1);
+                                            i4=i4+2  ;
+                                    end
+                               i6=1;
+                                    while i6<=Np %Coluna 2
+                                            Lig_De(i6,2)=Numero_de_pontos/2-2*Nn+(i6-1)        ;
+                                            Lig_De(i6+1,2)=Numero_de_pontos/2-2*Nn+(i6+1)     ;
+                                            i6=i6+2  ;
+                                    end  
+                               iif=size(Lig_De,1);
+                               i4=1;
+                                     for i4=i4:1:iif
+                                            MP_Deu(i4,1)=med_compr_Unitario(app,i4,Lig_De,PONTOS)     ;% PEGANDO MEDIDAS 
+                                            i4=i4+1;
+                                     end
+                                 M(13)=sum(MP_Deu,1)    ;  %% SOMANDO MEDIDAS
+                                 [Pi,P,Pii] = contador_nome_peca(app,Lig_De(:,1),Pi,Pn,P,Pii);
+                        %Lig_Dd - Diagonais Direita - Colunas
+                               i5=1;
+                               Pn=6;
+                                    while i5<=Np %Coluna 1
+                                        Lig_Dd(i5,1)=Numero_de_pontos/2+5+(i5-1)     ;
+                                        Lig_Dd(i5+1,1)=Numero_de_pontos/2+5+(i5-1)   ;
+                                        i5=i5+2  ;
+                                    end
+                               i7=1;
+                                    while i7<=Np %Coluna 2
+                                        Lig_Dd(i7,2)=Ligacoes_BSd(i2-1,2)+1+(i7-1)        ;                              
+                                        Lig_Dd(i7+1,2)=Ligacoes_BSd(i2-1,2)+1+(i7+1)     ;
+                                        i7=i7+2  ;
+                                    end 
+                                    [Pi,P,Pii] = contador_nome_peca(app,Lig_Dd(:,1),Pi,Pn,P,Pii);
+                    % LIGACOES DA PONTA-----------------------------
+                                    Lig_p=[Numero_de_pontos/2-2*Nn-1 Numero_de_pontos+1;
+                                    Numero_de_pontos/2 Numero_de_pontos+1;...
+                                    Numero_de_pontos/2 Numero_de_pontos+2;
+                                    Numero_de_pontos-2*Nn-1 Numero_de_pontos+1;
+                                    Numero_de_pontos+1 Numero_de_pontos;...
+                                    Numero_de_pontos Numero_de_pontos+2;
+                                    Numero_de_pontos+1 Numero_de_pontos+2];
+                                    iif=size(Lig_p,1);
+                                    i4=1;
+                                     for i4=i4:1:iif
+                                            MP_pu(i4,1)=med_compr_Unitario(app,i4,Lig_p,PONTOS)     ;%% PEGANDO MEDIDAS
+                                            i4=i4+1;
+                                     end
+                                        MP_pu        ;       % SOMANDO MEDIDAS
+                                    Pn=11;
+                                        M(16)=MP_pu(1,1);
+                                        [Pi,P,Pii] = contador_nome_peca(app,Lig_p(1,1),Pi,Pn,P,Pii);
+                                    Pn=8;
+                                        M(17)=MP_pu(2,1);
+                                        [Pi,P,Pii] = contador_nome_peca(app,Lig_p(1,1),Pi,Pn,P,Pii);
+                                    Pn=9;
+                                        M(18)=MP_pu(3,1);
+                                        [Pi,P,Pii] = contador_nome_peca(app,Lig_p(1,1),Pi,Pn,P,Pii);
+                                    Pn=11;
+                                        M(19)=MP_pu(7,1);
+                                        [Pi,P,Pii] = contador_nome_peca(app,Lig_p(1,1),Pi,Pn,P,Pii);
+                                    Pn=8;
+                                        M(20)=MP_pu(1,1);
+                                        [Pi,P,Pii] = contador_nome_peca(app,Lig_p(1,1),Pi,Pn,P,Pii);
+                                    Pn=9;
+                                        M(21)=MP_pu(2,1);
+                                        [Pi,P,Pii] = contador_nome_peca(app,Lig_p(1,1),Pi,Pn,P,Pii);
+                                    Pn=7;
+                                        M(14)=MP_pu(3,1);
+                                        [Pi,P,Pii] = contador_nome_peca(app,Lig_p(1,1),Pi,Pn,P,Pii);
+                    %% LIGAÇÕES MONTANTES - ESQUERDO E DIREITO
+                                 i8=1;
+                             Pn=10;
+                                        while i8<=Nn+1 %Montante Esquerdo
+                                            Lig_Me1(i8,1)=4 +2*(i8-1);
+                                            Lig_Me1(i8,2)=(Numero_de_pontos/2-2*Nn)+2*(i8-1);
+                                        i8=i8+1;
+                                        end
+                                        iif=size(Lig_Me1,1);
+                                i4=1;
+                                         for i4=i4:1:iif
+                                        MP_Me1u(i4,1)=med_compr_Unitario(app,i4,Lig_Me1,PONTOS)     ;%PEGANDO MEDIDAS 
+                                         i4=i4+1;
+                                         end
+                                    M(15)=sum(MP_Me1u,1)      ; %SOMANDO MEDIDAS
+                                    [Pi,P,Pii] = contador_nome_peca(app,Lig_Me1,Pi,Pn,P,Pii);
+                              i9=1;
+                                        while i9<=Nn+1 %Montante Direito
+                                            Lig_Md1(i9,1)=Numero_de_pontos/2+3+1 +2*(i9-1);
+                                            Lig_Md1(i9,2)=Numero_de_pontos-2*Nn+2*(i9-1);
+                                        i9=i9+1;
+                                        end
+                                    Lig_M=[Lig_Me1;Lig_Md1];
+                                    [Pi,P,Pii] = contador_nome_peca(app,Lig_Md1,Pi,Pn,P,Pii);
+              %  MATRIZ MEDIDAS
+%               format bank
+                                    M=M';
+                                    sz_M=size(M,1);
+                                    Piz=1:1:sz_M;
+                                    Piz=Piz';
+                                    %% PREPARANDO MATRIZ MEDIDAS
+                                            Mt=100*round([M(1),M(2),M(3),M(5),M(13)/(Nn*2),M(19),M(17),M(15)/(Nn+1),M(20),M(12)+M(4)+M(14),M(6)],4);
+                                            Mt=Mt';
+                                            sz=size(Mt,1);
+                                                    for i=1:1:sz
+                                                    out{i,1} = sprintf('%4.2f',Mt(i,1));
+                                                    i=i+1;
+                                                    end
+                                    %% MATRIZ MEDIDAS TOTAIS
+%                                                 out;
+                                               mult=[2; 2; 2; 2; 2*Nn*2; 2; 2; 2*(Nn+1); 2;2;2];
+                                               Mtt=Mt.*mult.*Npo;
+                                               Mttm=Mtt;
+                                                    for i=1:1:sz
+                                                    outMt{i,1} = sprintf('%4.2f',Mtt(i,1));
+                                                    i=i+1;
+                                                    end
+%                                    outMt;
+                                                    
+                                    %% MATRIZ NOME PEÇA
+                                            Pn=1:1:sz;
+                                            Pnl=Pn';
+                                    %% MATRIZ NOME INCOGNITAS
+                                            Pt={'Pi';'Pb';'Db';'Pb2';'D';'Mc';'Dc';'M';'Cc';'BS';'BI'}';
+                                    %% MATRIZ NOMES COMPLETOS
+                                            Nt={'Pontalete Inicial';'pé base';'Diametro base';'pé base 2';...
+                                                          'Diagonais';'Montante Central';'Diagonal Cabeça';...
+                                                                'Montantes';'Cabeça Central';'Banzo Superior';'Banzo Inferior'}';
+                                   %CRIANDO TABELA PEÇA INCOGNITAS  NOMES COMPLETOS MEDIDAS  
+                                     MM2_table=table(Pnl, Pt',Nt',out,outMt); 
+                                     app.Tabela_Med_Tesoura.Data=MM2_table; %Plot na tabela %  MATRIZ MEDIDAS
+                                     
+
+      
+% CRIACAO BARRAS               
+                yund=Mt;
+                y1=Mtt;
+                y=Mtt;
+                Lim=600;
+                sz_y=size(y,1);
+                iB=1;
+                Btest=0;
+                B(1,1)=0;
+                k=1;
+                iBBs=10;
+                SUM=0;
+                SUM2=0;
+
+                while iB<=sz_y %sz_y
+                % while iB<=10 %sz_y
+                    
+                    cond2=sum(B(k,:))+y(iB,1);
+                    if cond2<=Lim
+                        B(k,iB)=y(iB,1);
+                    
+                    else
+                        k=k+1;
+                        B(k,iB)=y(iB,1);
+                        
+                            S(k,1)=sum(B(k-1,:));
+                            D(k,1)=Lim-S(k,1);
+                            Rz=y(iB,1)/yund(iB,1);
+                            Drz=floor(D(k,1)/yund(iB,1));
+                            B(k-1,iB)=Drz*yund(iB,1);
+                            B(k,iB)=y(iB,1)-B(k-1,iB);
+                            Coleta=Drz*yund(iB,1);
+                                    if B(k,iB)>=Lim
+                                        
+                                        if yund(iB,1)>Lim
+                                            
+                                            Rzpr=y(iB,1)/Lim;
+                                            Rzp=floor(y(iB,1)/Lim);
+                                            iRzp=1;
+                                            for iRzp=1:1:Rzp
+                                                B(k,iB)=Lim
+                                                Di=yund(iB,1)-iRzp*Lim
+                                                iRzp=iRzp+1;
+                                                    if Rzpr-Rzp>0
+                                                        B(k+1,iB)= y(iB,1)-sum(B(:,iB));
+                                                    end
+                                                k=k+1;
+                                            end
+                                            
+                                        else
+                                                RLim=floor(Lim/yund(iB,1));
+                                                Dr=floor(B(k,iB)/(RLim*yund(iB,1)));
+                                                Dr2=B(k,iB)/(RLim*yund(iB,1));
+                                                iF=1;
+                                                    for iF=1:1:Dr
+                                                        B(k,iB)=RLim*yund(iB,1);
+                                                        k=k+1;
+                                                        iF=iF+1;
+                                                        B(k+1,iB)=0;
+                                                    end
+                                                        if (Dr2-Dr)>0
+                    %                                     k=k+1;
+                                                        B(k,iB)= y(iB,1)-sum(B(:,iB));
+                                                        else
+                                                           B(k,iB)=0;
+                                                        end
+                                        end
+                                    end
+                                        
+                                        
+                    end
+                    if iB<iBBs
+                        SUM= SUM+sum(B(:,iB));
+                        SUMk= k;
+                    else
+                        SUM2=SUM2+sum(B(:,iB));
+                        SUMk2= k-SUMk-1;
+                    end  
+                iB=iB+1;
+                end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%                                     
+%                %CRIANDO TABELA PERFILS E VALORES
+                                   Nt2={'Perfil UDC 68x300x325#13';'Perfil UDC 75x40x325#13 ';'Total'};
+%                                    %CRIANDO TABELA Barras
+%                                    Valor2=zeros(2,1)   ;
+                                    app.TabelaValores.Data=array2table(zeros(3,5))
+
+                                    Barras(1,1)=SUMk;
+                                    Barras(2,1)=SUMk2;
+                                    Barras(3,1)=Barras(1,1)+Barras(2,1);
+%                                     %CRIANDO VALOR
+% app.TabelaValores.Data(1,4)
+
+                                    Valor2(1,1) = table2array(app.TabelaValores.Data(1,4));
+                                    Valor2(2,1) = table2array(app.TabelaValores.Data(2,4));
+                                    Valor2(3,1)=0;
+
+
+%                                     Valor2(1,1)=app.TabelaValores.Data(1,4)
+%                                     Valor2(2,1)=app.TabelaValores.Data(2,4)
+                                    
+                                    
+                                    
+                                    
+                                    %Valor total
+                                    Valor_total(1,1)=Valor2(1,1)*Barras(1,1);
+                                    Valor_total(2,1)=Valor2(2,1)*Barras(2,1);
+                                    Valor_total(3,1)=0;
+%                                    %CRIANDO TABELA MEDIDAS TOTAL
+                                   Perfil(1,1)=sum(Mtt(1:9,1))   ;%Perfil_1
+                                   Perfil(2,1)=sum(Mtt(10:11,1)) ;%Perfil_2
+                                   Perfil(3,1)=Perfil(1,1)+Perfil(2,1);
+                                   szP=size(Perfil,1);
+                                                    for i=1:1:szP
+                                                    Mtt_perfil{i,1} = sprintf('%4.2f',Perfil(i,1));
+                                                    i=i+1;
+                                                    end
+                                                    %% PLOT MATRIX 1
+                                     MM3_table=table(Nt2,Mtt_perfil,Barras,Valor2,Valor_total);
+                                     app.TabelaValores.Data=MM3_table;
+                                     app.TabelaValores.ColumnEditable = true;
+                                     app.TabelaValores.ColumnEditable(2) = false;
+                                     app.TabelaValores.ColumnEditable(3) = false;
+                                     app.TabelaValores.ColumnEditable(4) = true;
+                                     app.TabelaValores.ColumnEditable(5) = false;
+                                     
+                                     
+                                     %VALOR TOTAL
+                                     
+                                    
+                                    
+                                      
+                                   
+                                     
+                                     setappdata(0,'MM3_table',MM3_table);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%                                     
+                                     
+
+% MM3_table=getappdata(0,'MM3_table');
+% nomecell=app.NomedaCotaoTextArea.Value; 
+% nomestr = char(nomecell);
+% arq_final='.txt';
+% fname = [nomestr arq_final];
+% writetable(MM3_table,fname)  ;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+                %%% %% SALVAR COTACAO
+                % MM3_table=getappdata(0,'MM3_table');
+                % nomecell=app.NomedaCotaoTextArea.Value; 
+                % nomestr = char(nomecell)
+                % arq_final='.txt';
+                % fname = [nomestr arq_final]
+                % writetable(MM3_table,fname)  
+
+                %%%% LOAD COTACAO
+                % nomecell=app.NomedaCotaoTextArea.Value; 
+                % nomestr = char(nomecell)
+                % arq_final='.txt';
+                % fname = [nomestr arq_final]
+                % MM3_table = readtable(fname,'Format','%s%s%s%s')
+                % app.TabelaValores.Data=MM3_table;                                    
+                                     
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
+
+
+                                     
+               %% CRIANDO MATRIZ LIGACOES
+               %--------------------CRIANDO MATRIZ LIGACOES----------------------------------
+                    %[ ponto, ponto, numero da ligacao]
+                                    Ligacoes=[Ligacoes1;Ligacoes_BSe;Ligacoes_BIe;Ligacoes2;Ligacoes_BSd;Ligacoes_BId;Lig_De;Lig_Dd;Lig_p;Lig_M];
+                                    NL=size(Ligacoes,1);
+                                    k1=size(Ligacoes,1);
+                                    Ligacoes(:,3) = 1:k1 ;
+              %% ---- DISTANCIA ENTRE  TERçAS
+                                is=1;
+                                sizeTerca=size(terca,1);
+                                    for is=1:1:sizeTerca-1
+                                        AA=terca(is,:);
+                                        BB=terca(is+1,:);
+                                        X=[AA;BB];
+                                        ss(is)=pdist(X,'euclidean');
+                    
+                                    is=is+1;
+                                    end
+                                b={};
+                                size(ss,2);
+                                for ik=1:size(ss,2)
+                                b{ik,1}=char(sprintf('T%.2s, %.4s (m)',num2str(ik),num2str(ss(ik))));
+                                app.TabelaTercas.Value=b;
+                                end
+          %% SALVANDO DADOS PLOTANDO PORTICO LIGACOES
+                        %% SALVANDO PONTOS, 
+                            setappdata(0,'PONTOS',PONTOS);
+                            setappdata(0,'Ligacoes',Ligacoes);
+         %Coletando coordenadas a partir do numero do ponto
+                %Comprimento Suporte esquerdo
+                            i=1;
+                            i1=1    ;%Intervalo - Numero da Ligação Inicial
+                            i2=size(Ligacoes(:,1));%Intervalo - Numero da Ligação Final
+                %% MATRIX C - COMPRIMENTO DAS PEÇAS
+                                C=med_compr(app,i1,i2,Ligacoes,PONTOS);
+                                
+                %% ESCREVENDO NA TABELA COMPRIMENTO DAS PEÇAS
+                                C1(:,1)=round(C(:,1),0);
+                                C1(:,2)=round(100*C(:,2),2);
+                                setappdata(0,'C1',C1);
+          % % % SALVANDO DADOS DE PONTOS E LIGACOES
+                                    % PONTOS1(:,1)=100*PONTOS(:,2)
+                                    % PONTOS1(:,2)=100*PONTOS(:,3)                                
+                                    %  d=size(PONTOS1,1)
+                                    %  PONTOS1(:,3)=100*ones(d,1)
+                                   %   dlmwrite('coord1111.txt',PONTOS1,'-append','delimiter',' ','roffset',1,'precision',4)
+                                   
+%%                           
+                                   
+                                   
+        end
+
+        function C=med_compr_Unitario(app,i,Ligacoes,PONTOS)  % Medidas Comprimento entre Pontos Linkados
+                            %Coletando numero do ponto 
+                                nL1=Ligacoes(i,1)           ;%numero do ponto 1 ligado ao ponto 2
+                                nL2=Ligacoes(i,2)           ;%numero do ponto 2
+                            %Buscando coordenadas do ponto 1 e 2    
+                                x1=PONTOS(nL1,2)        ;%Coordenada x ponto nL1
+                                y1=PONTOS(nL1,3)        ;%Coordenada y ponto nL1
+                                x2=PONTOS(nL2,2)        ;%Coordenada x ponto nL2
+                                y2=PONTOS(nL2,3)        ;%Coordenada y ponto nL2
+                                C= ( (x1-x2)^2 + (y1-y2)^2 )^0.5    ;%Comprimento entre os Pontos nL1 e nL2
+        end
+        
+        function [Pi,P,Pii] = contador_nome_peca(app,ligacoes,Pi,Pn,P,Pii)
+            szl=size(ligacoes,1);
+            szl;
+            i=1;
+            for i=1:1:szl
+                P1=0;
+                P1(Pi,1)=Pn;
+                sizeP=size(P1,1)-size(P,1);
+                P2=[P;zeros(sizeP,1)];
+                P = P1 + P2;
+                Pii1=0;
+                Pii1(Pi,1)=Pi;
+                sizePii=size(Pii1,1)-size(Pii,1);
+                Pii2=[Pii;zeros(sizePii,1)];
+                Pii = Pii1 + Pii2;Pi=Pi+1;
+                i=i+1;
+            end
+        end
+        
+        
+         
+        
+        
+    end
+
+    % Callbacks that handle component events
+    methods (Access = private)
+
+        % Code that executes after component creation
+        function startupFcn_axes1(app)
+            app.UIaxes1.Visible = 'off';
+   
+%% ---------------GET DADOS INICIAIS----------------
+%% ---------------GET DADOS INICIAIS---------------- 
+format long
+        L=app.IN_L.Value;     Ag=app.IN_Ag.Value;      At=app.IN_At.Value;     Nn=app.IN_Nn.Value;    dT=app.IN_dT.Value;    h=app.IN_h.Value;
+        a=app.IN_a.Value;     Cg=app.IN_Cg.Value;      Npo=app.IN_Npo.Value;
+        
+        setappdata(0,'L',L);        setappdata(0,'Ag',Ag);        setappdata(0,'At',At);        setappdata(0,'Nn',Nn);        setappdata(0,'dT',dT);
+        setappdata(0,'h',h);        setappdata(0,'a',a);        setappdata(0,'Cg',Cg);         setappdata(0,'Npo',Npo); 
+     
+                 screenSize = get(groot,'ScreenSize');
+              screenWidth = screenSize(3);
+              screenHeight = screenSize(4);
+              left = screenWidth*0.07;
+              bottom = screenHeight*0.07;
+              width = screenWidth*0.8;
+              height = screenHeight*0.8;
+              drawnow;
+              app.UIFigure.Position = [left bottom width height];
+        
+        end
+
+        % Button pushed function: VERPORTICOButton
+        function VERPORTICOButtonPushed(app, event)
+
+%% PLOT DO PORTICO
+%% PLOT DO PORTICO
+%% PLOT DO PORTICO
+
+%%GET DA FUNCAO PROGRAM        
+                % GET Dados Iniciais GALPAO 3D
+                L=getappdata(0,'L');
+                Ag=getappdata(0,'Ag');
+                At=getappdata(0,'At');
+                Nn=getappdata(0,'Nn');
+                CPp=getappdata(0,'CPp');
+                dT=getappdata(0,'dT');
+                h=getappdata(0,'h'); 
+                a=getappdata(0,'a');
+                Cg=getappdata(0,'Cg');
+                Ny=getappdata(0,'Ny');
+                Nc=getappdata(0,'Nc');
+                Ncs=getappdata(0,'Ncs');
+                Ncl=getappdata(0,'Ncl');
+                Ncv=getappdata(0,'Nv');
+                Npo=getappdata(0,'Npo');
+                Nv=getappdata(0,'Nv');
+         %% FUNCAO PROGRAM       
+            [PONTOS Ligacoes terca terca2a C1 e H Npp CPp P Mt Mtt B]=program(app,L,Ag,At,Nn,dT,h,Nv,Npo,a,Cg,Ny,Nc,Ncs,Ncl);
+         %% CRIANDO PILARES
+                                Pilar1=[0 0;0 Ag];
+                                Pilar2=[a 0;a Ag];
+                                Pilar3=[L 0;L Ag];
+                                Pilar4=[L-a 0;L-a Ag];
+                    %% PREPARANDO E PLOTANDO PORTICO GRAFICO ARTISTICO
+                                cla(app.UIaxes1,'reset')
+                                XX1=PONTOS(:,2);
+                                YY1=PONTOS(:,3);
+                                s=Ligacoes(:,1)';
+                                t=Ligacoes(:,2)';
+                                k=size(s,2);
+                                weights = 1:k ;
+                                G = graph(s,t,weights);
+                                % figure (2)
+                                % figure('units','normalized','outerposition',[0 0 1 1]) %Abrir tela  inteira
+                                % ,'EdgeLabel',G.Edges.Weight)
+                                hold(app.UIaxes1,'on');
+                                plot(app.UIaxes1,G,'k','MarkerSize',0.1,'NodeLabel',{},'LineWidth',3,'XData',XX1,'YData',YY1)
+                                % xlabel('Largura (m)','FontSize',14,'fontweight','bold'); % label x-axis
+                                % ylabel('Altura (m)','FontSize',14,'fontweight','bold'); % label left y-axis
+                                % set(gca,'fontsize',12,'fontweight','bold');
+                                % title('Portico','FontSize',14,'fontweight','bold');
+                                hold(app.UIaxes1,'on');
+                                plot(app.UIaxes1,Pilar1(:,1),Pilar1(:,2),'-','color',[122, 122, 122]/255,'LineWidth',3)
+                                hold(app.UIaxes1,'on');
+                                plot(app.UIaxes1,Pilar2(:,1),Pilar2(:,2),'-','color',[122, 122, 122]/255,'LineWidth',3)
+                                hold(app.UIaxes1,'on');
+                                plot(app.UIaxes1,Pilar3(:,1),Pilar3(:,2),'-','color',[122, 122, 122]/255,'LineWidth',3)
+                                hold(app.UIaxes1,'on');
+                                plot(app.UIaxes1,Pilar4(:,1),Pilar4(:,2),'-','color',[122, 122, 122]/255,'LineWidth',3)
+                                hold(app.UIaxes1,'on');
+                                plot(app.UIaxes1,terca(:,1),terca(:,2),'s','MarkerSize',7,'Color','k')
+                                hold(app.UIaxes1,'on');
+                                plot(app.UIaxes1,terca2a(:,1),terca2a(:,2),'s','MarkerSize',7,'Color','k')
+                                XLIM=round(L+1,0);
+                                YLIM=round(H,0);
+                                ax = app.UIaxes1;
+                                ax.Title.String = 'PORTICO';
+                                ax.XLabel.String = 'Largura (m)';
+                                ax.YLabel.String = 'Altura (m)';
+                                ax.DataAspectRatio = [1 1 1];
+                                ax.XLim=[-1 XLIM];
+                                ax.YLim=[0 YLIM];
+        end
+
+        % Callback function
+        function IN_LValueChanged(app, event)
+            L = app.IN_L.Value
+            guidata(app.IN_L,L);
+            app.L=guidata(app.IN_L)
+        end
+
+        % Button pushed function: Button_L
+        function Button_LPushed(app, event)
+%% PLOT COMPRIMENTO ENTRE LIGACOES
+%% PLOT COMPRIMENTO ENTRE LIGACOES
+%% PLOT COMPRIMENTO ENTRE LIGACOES
+
+%%GET DA FUNCAO PROGRAM        
+                % GET Dados Iniciais GALPAO 3D
+                L=getappdata(0,'L');
+                Ag=getappdata(0,'Ag'); 
+                At=getappdata(0,'At');
+                Nn=getappdata(0,'Nn');
+                CPp=getappdata(0,'CPp');
+                dT=getappdata(0,'dT');
+                h=getappdata(0,'h'); 
+                a=getappdata(0,'a');
+                Cg=getappdata(0,'Cg');
+                Ny=getappdata(0,'Ny');
+                Nc=getappdata(0,'Nc');
+                Ncs=getappdata(0,'Ncs');
+                Ncl=getappdata(0,'Ncl');
+                Ncv=getappdata(0,'Nv');
+                Npo=getappdata(0,'Npo');
+                Nv=getappdata(0,'Nv');
+%% FUNCAO PROGRAM  
+            [PONTOS Ligacoes terca terca2a C1 e H Npp CPp P]=program(app,L,Ag,At,Nn,dT,h,Nv,Npo,a,Cg,Ny,Nc,Ncs,Ncl);
+%Dados Iniciais 
+                L=getappdata(0,'L');H=getappdata(0,'H');
+                Ag=getappdata(0,'Ag'); At=getappdata(0,'At'); terca=getappdata(0,'terca');
+                %Dados Trabalhados
+                PONTOS=getappdata(0,'PONTOS');
+                Ligacoes=getappdata(0,'Ligacoes');
+                C1=getappdata(0,'C1');
+%% PLOTANDO TESOURA
+            cla(app.UIaxes1,'reset')
+            XX1=PONTOS(:,2);
+            YY1=PONTOS(:,3);
+            s=Ligacoes(:,1)';
+            t=Ligacoes(:,2)';
+            size_geral=size(Ligacoes,1);
+            %Comprimento da ligacao
+                weights=C1(:,2);       
+            %Numero da ligacao
+                %weights=Ligacoes(:,3); 
+            %Nome da Peça
+                %z=size_geral;
+                %Pl=P';
+                %weights=Pl(1:z,1); 
+            G= graph(s',t',weights');
+                    plot(app.UIaxes1,G,'XData',XX1,'YData',YY1,...
+                                                 'NodeLabel',{},...
+                                                   'EdgeLabel',G.Edges.Weight,...
+                                                     'EdgeColor','k',...
+                                                        'MarkerSize',1)
+                    hold(app.UIaxes1,'on');
+                    plot(app.UIaxes1,terca(:,1),terca(:,2),'s','MarkerSize',7,'Color','k')
+                    XLIM=round(L+1,0);
+                    YLIM=round(H,0);
+                    ax = app.UIaxes1;
+                    ax.Title.String = 'TESOURA';
+                    ax.DataAspectRatio = [1 1 1];
+                    ax.XLabel.String = 'Largura (m)';
+                    ax.YLabel.String = 'Altura (m)';
+                    ax.XLim=[-0.2 L/2];
+                    ax.YLim=[Ag-0.3 YLIM];
+        end
+
+        % Value changed function: IN_Ag
+        function IN_AgValueChanged(app, event)
+            Ag = app.IN_Ag.Value
+            guidata(app.IN_Ag,Ag);
+            app.Ag=guidata(app.IN_Ag)
+            setappdata(0,'Ag',app.Ag);
+        end
+
+        % Value changed function: IN_At
+        function IN_AtValueChanged(app, event)
+            At = app.IN_At.Value;
+            guidata(app.IN_At,At);
+            app.At=guidata(app.IN_At);
+            setappdata(0,'At',app.At);
+        end
+
+        % Callback function
+        function IN_NnValueChanged(app, event)
+            Nn = app.IN_Nn.Value;
+            guidata(app.IN_Nn,Nn);
+            app.Nn=guidata(app.IN_Nn);
+            setappdata(0,'Nn',app.Nn);
+        end
+
+        % Value changed function: IN_dT
+        function IN_dTValueChanged(app, event)
+            dT = app.IN_dT.Value;
+            guidata(app.IN_dT,dT);
+            app.dT=guidata(app.IN_dT);
+            setappdata(0,'dT',app.dT);
+        end
+
+        % Value changed function: IN_h
+        function IN_hValueChanged(app, event)
+            h = app.IN_h.Value;
+            guidata(app.IN_h,h);
+            app.h=guidata(app.IN_h);
+            setappdata(0,'h',app.h);
+        end
+
+        % Value changed function: IN_a
+        function IN_aValueChanged(app, event)
+            a = app.IN_a.Value;
+            guidata(app.IN_a,a);
+            app.a=guidata(app.IN_a);
+            setappdata(0,'a',app.a);
+        end
+
+        % Value changed function: IN_Cg
+        function IN_CgValueChanged(app, event)
+            Cg = app.IN_Cg.Value;
+            guidata(app.IN_Cg,Cg);
+            app.Cg=guidata(app.IN_Cg);
+            setappdata(0,'Cg',app.Cg);
+        end
+
+        % Callback function
+        function IN_NtValueChanged(app, event)
+            Nt = app.IN_Nt.Value;
+            guidata(app.IN_Nt,Nt);
+            app.Nt=guidata(app.IN_Nt);
+            setappdata(0,'Nt',app.Nt);
+        end
+
+        % Callback function
+        function IN_NcValueChanged(app, event)
+            Nc = app.IN_Nc.Value;
+            guidata(app.IN_Nc,Nc);
+            app.Nc=guidata(app.IN_Nc);
+            setappdata(0,'Nc',app.Nc);
+        end
+
+        % Callback function
+        function IN_NcsValueChanged(app, event)
+            Ncs = app.IN_Ncs.Value;
+            guidata(app.IN_Ncs,Ncs);
+            app.Ncs=guidata(app.IN_Ncs);
+            setappdata(0,'Ncs',app.Ncs);
+        end
+
+        % Callback function
+        function IN_NclValueChanged(app, event)
+            Ncl = app.IN_Ncl.Value;
+            guidata(app.IN_Ncl,Ncl);
+            app.Ncl=guidata(app.IN_Ncl);
+            setappdata(0,'Ncl',app.Ncl);
+        end
+
+        % Callback function
+        function IN_NvValueChanged(app, event)
+            Nv = app.IN_Nv.Value;
+            guidata(app.IN_Nv,Nv);
+            app.Nv=guidata(app.IN_Nv);
+            setappdata(0,'Nv',app.Nv);
+        end
+
+        % Value changed function: IN_Npo
+        function IN_NpoValueChanged(app, event)
+            Npo = app.IN_Npo.Value;
+            guidata(app.IN_Npo,Npo);
+            app.Npo=guidata(app.IN_Npo);
+            setappdata(0,'Npo',app.Npo);
+        end
+
+        % Value changed function: IN_L
+        function IN_LValueChanged2(app, event)
+            L = app.IN_L.Value;
+            guidata(app.IN_L,L);
+            app.L=guidata(app.IN_L);
+            setappdata(0,'L',app.L);
+        end
+
+        % Value changed function: IN_Nn
+        function IN_NnValueChanged2(app, event)
+            Nn = app.IN_Nn.Value;
+            guidata(app.IN_Nn,Nn);
+            app.Nn=guidata(app.IN_Nn);
+            setappdata(0,'Nn',app.Nn);
+        end
+
+        % Button pushed function: VERVISTA3DButton
+        function VERVISTA3DButtonPushed(app, event)
+%% PLOT DO GRAFICO 3D     
+%% PLOT DO GRAFICO 3D 
+%% PLOT DO GRAFICO 3D 
+
+%%GET DA FUNCAO PROGRAM        
+                % GET Dados Iniciais GALPAO 3D
+                L=getappdata(0,'L');
+                Ag=getappdata(0,'Ag'); 
+                At=getappdata(0,'At');
+                Nn=getappdata(0,'Nn');
+                CPp=getappdata(0,'CPp');
+                dT=getappdata(0,'dT');
+                h=getappdata(0,'h'); 
+                a=getappdata(0,'a');
+                Cg=getappdata(0,'Cg');
+                Ny=getappdata(0,'Ny');
+                Nc=getappdata(0,'Nc');
+                Ncs=getappdata(0,'Ncs');
+                Ncl=getappdata(0,'Ncl');
+                Ncv=getappdata(0,'Nv');
+                Npo=getappdata(0,'Npo');
+                Nv=getappdata(0,'Nv');
+%% FUNCAO PROGRAM 
+               [PONTOS Ligacoes terca terca2a C1 e H Npp CPp P Mt Mtt]=program(app,L,Ag,At,Nn,dT,h,Nv,Npo,a,Cg,Ny,Nc,Ncs,Ncl);
+%% Limpeza Axes1
+            cla(app.UIaxes1,'reset');
+ %% CRIANDO PILARES    
+                                Pilar1=[0 0;0 Ag];
+                                Pilar2=[a 0;a Ag];
+                                Pilar3=[L 0;L Ag];
+                                Pilar4=[L-a 0;L-a Ag];
+%% 3D - PREPARANDO E PLOTANDO GRAFICO 3D ARTISTICO GALPAO
+            ip=1;
+                if Npp==1
+                    Npp=0;
+                end
+            
+            for ip=ip:1:Npp+1
+            XX1=PONTOS(:,2);
+            YY1=PONTOS(:,3);
+            s=Ligacoes(:,1)';
+            t=Ligacoes(:,2)';
+            k=size(s,2);
+            weights = 1:k ;
+            sizez=size(PONTOS,1);           
+            ZZ1=(ip-1)*CPp*ones(sizez,1);
+            sizeP=size(Pilar1,1);
+            PilarC=(ip-1)*CPp*ones(sizeP,1);
+            G = graph(s,t,weights);
+            plot(app.UIaxes1,G,'k','MarkerSize',0.1,'NodeLabel',{},'LineWidth',3,'XData',ZZ1,'YData',XX1,'ZData',YY1)
+            hold(app.UIaxes1,'on');
+            plot3(app.UIaxes1,PilarC(:,1),Pilar1(:,1),Pilar1(:,2),'-','color',[122, 122, 122]/255,'LineWidth',3)
+            hold(app.UIaxes1,'on');
+            plot3(app.UIaxes1,PilarC(:,1),Pilar2(:,1),Pilar2(:,2),'-','color',[122, 122, 122]/255,'LineWidth',3)
+            hold(app.UIaxes1,'on');
+            plot3(app.UIaxes1,PilarC(:,1),Pilar3(:,1),Pilar3(:,2),'-','color',[122, 122, 122]/255,'LineWidth',3)
+            hold(app.UIaxes1,'on');
+            plot3(app.UIaxes1,PilarC(:,1),Pilar4(:,1),Pilar4(:,2),'-','color',[122, 122, 122]/255,'LineWidth',3)
+            hold(app.UIaxes1,'on');
+            XLIM=Cg+1;
+            YLIM=L;
+            ZLIM=Ag+At+1;
+            ax = app.UIaxes1;
+            ax.Title.String = 'GRAFICO 3D';
+            ax.XLabel.String = 'Comprimento (m)';
+            ax.YLabel.String = 'Largura (m)';
+            ax.ZLabel.String = 'Altura (m)';
+            ax.DataAspectRatio = [1 1 1];
+            ax.XLim=[-1 XLIM];
+            ax.YLim=[0 YLIM];
+            ax.ZLim=[0 ZLIM];
+            ip=ip+1;
+            end
+        end
+
+        % Callback function
+        function LButtonPushed(app, event)
+            
+        end
+
+        % Callback function
+        function CheckBox_LValueChanged(app, event)
+            value = app.CheckBox_L.Value;
+            app.TabelaTercas.Value{1}='L - Largura do Portico';
+        end
+
+        % Callback function
+        function CheckBox_L_2ValueChanged(app, event)
+           value = app.CheckBox_L_2.Value;
+        end
+
+        % Button pushed function: LButton
+        function LButtonPushed2(app, event)
+            app.SigTextArea.Value{1}='L (metros)- Largura do Galpão'           
+        end
+
+        % Value changed function: SigTextArea
+        function SigTextAreaValueChanged(app, event)
+            value = app.SigTextArea.Value;
+        end
+
+        % Button pushed function: AgButton
+        function AgButtonPushed(app, event)
+            app.SigTextArea.Value{1}='Ag (metros) - Altura Pé Direito'
+        end
+
+        % Button pushed function: AtButton
+        function AtButtonPushed(app, event)
+            app.SigTextArea.Value{1}='At (metros) - Altura Pé do Galpão'
+        end
+
+        % Button pushed function: CgButton
+        function CgButtonPushed(app, event)
+            app.SigTextArea.Value{1}='Cg (metros) - Comprimento do Galpão'
+        end
+
+        % Button pushed function: NpoButton
+        function NpoButtonPushed(app, event)
+            app.SigTextArea.Value{1}='Npo (Unidades) - Número de Porticos'
+        end
+
+        % Button pushed function: aButton
+        function aButtonPushed(app, event)
+            app.SigTextArea.Value{1}='a (metros) - Distância de apoio Tesoura'
+        end
+
+        % Button pushed function: hButton
+        function hButtonPushed(app, event)
+            app.SigTextArea.Value{1}='h (metros) - Altura Cabeça da Tesoura'
+        end
+
+        % Button pushed function: dTButton
+        function dTButtonPushed(app, event)
+            app.SigTextArea.Value{1}='dT (metros) - Largura do Banzo Inferior Central'
+        end
+
+        % Button pushed function: NnButton
+        function NnButtonPushed(app, event)
+            app.SigTextArea.Value{1}='Nn (Unidades) - Número de Divisões'
+        end
+
+        % Button pushed function: VERNPEAButton
+        function VERNPEAButtonPushed(app, event)
+%% PLOT NOME DA PECA
+%% PLOT NOME DA PECA
+%% PLOT NOME DA PECA
+
+%%GET DA FUNCAO PROGRAM        
+                % GET Dados Iniciais GALPAO 3D
+                L=getappdata(0,'L');
+                Ag=getappdata(0,'Ag'); 
+                At=getappdata(0,'At');
+                Nn=getappdata(0,'Nn');
+                CPp=getappdata(0,'CPp');
+                dT=getappdata(0,'dT');
+                h=getappdata(0,'h'); 
+                a=getappdata(0,'a');
+                Cg=getappdata(0,'Cg');
+                Ny=getappdata(0,'Ny');
+                Nc=getappdata(0,'Nc');
+                Ncs=getappdata(0,'Ncs');
+                Ncl=getappdata(0,'Ncl');
+                Ncv=getappdata(0,'Nv');
+                Npo=getappdata(0,'Npo');
+                Nv=getappdata(0,'Nv');
+%%FUNCAO PROGRAM
+            [PONTOS Ligacoes terca terca2a C1 e H Npp CPp P]=program(app,L,Ag,At,Nn,dT,h,Nv,Npo,a,Cg,Ny,Nc,Ncs,Ncl);
+%Dados Iniciais 
+                L=getappdata(0,'L');H=getappdata(0,'H');
+                Ag=getappdata(0,'Ag'); At=getappdata(0,'At'); terca=getappdata(0,'terca');
+                %Dados Trabalhados
+                PONTOS=getappdata(0,'PONTOS');
+                Ligacoes=getappdata(0,'Ligacoes');
+                C1=getappdata(0,'C1');
+%% PLOTANDO TESOURA
+            cla(app.UIaxes1,'reset')
+            XX1=PONTOS(:,2);
+            YY1=PONTOS(:,3);
+            s=Ligacoes(:,1)';
+            t=Ligacoes(:,2)';
+            size_geral=size(Ligacoes,1);
+            %Comprimento da ligacao
+                    % weights=C1(:,2);       
+            % Numero da ligacao
+                    %weights=Ligacoes(:,3); 
+            % Nome da Peça
+            weights=P; 
+            
+            G= graph(s',t',weights');
+                    plot(app.UIaxes1,G,'XData',XX1,'YData',YY1,...
+                                                 'NodeLabel',{},...
+                                                   'EdgeLabel',G.Edges.Weight,...
+                                                     'EdgeColor','k',...
+                                                        'MarkerSize',1)
+                    hold(app.UIaxes1,'on');
+                    plot(app.UIaxes1,terca(:,1),terca(:,2),'s','MarkerSize',7,'Color','k')
+                    XLIM=round(L+1,0);
+                    YLIM=round(H,0);
+                    ax = app.UIaxes1;
+                    ax.Title.String = 'TESOURA';
+                    ax.DataAspectRatio = [1 1 1];
+                    ax.XLabel.String = 'Largura (m)';
+                    ax.YLabel.String = 'Altura (m)';
+                    ax.XLim=[-0.2 L/2];
+                    ax.YLim=[Ag-0.3 YLIM];
+        end
+
+        % Button pushed function: VERNLIGAOButton
+        function VERNLIGAOButtonPushed(app, event)
+%% PLOT NUMERO DA LIGACAO
+%% PLOT NUMERO DA LIGACAO
+%% PLOT NUMERO DA LIGACAO
+
+%%GET DA FUNCAO PROGRAM        
+                % GET Dados Iniciais GALPAO 3D
+                L=getappdata(0,'L');
+                Ag=getappdata(0,'Ag'); 
+                At=getappdata(0,'At');
+                Nn=getappdata(0,'Nn');
+                CPp=getappdata(0,'CPp');
+                dT=getappdata(0,'dT');
+                h=getappdata(0,'h'); 
+                a=getappdata(0,'a');
+                Cg=getappdata(0,'Cg');
+                Ny=getappdata(0,'Ny');
+                Nc=getappdata(0,'Nc');
+                Ncs=getappdata(0,'Ncs');
+                Ncl=getappdata(0,'Ncl');
+                Ncv=getappdata(0,'Nv');
+                Npo=getappdata(0,'Npo');
+                Nv=getappdata(0,'Nv');
+%%FUNCAO PROGRAM
+            [PONTOS Ligacoes terca terca2a C1 e H Npp CPp P]=program(app,L,Ag,At,Nn,dT,h,Nv,Npo,a,Cg,Ny,Nc,Ncs,Ncl);
+%Dados Iniciais 
+                L=getappdata(0,'L');H=getappdata(0,'H');
+                Ag=getappdata(0,'Ag'); At=getappdata(0,'At'); terca=getappdata(0,'terca');
+                %Dados Trabalhados
+                PONTOS=getappdata(0,'PONTOS');
+                Ligacoes=getappdata(0,'Ligacoes');
+                C1=getappdata(0,'C1');
+%% PLOTANDO TESOURA
+            cla(app.UIaxes1,'reset')
+            XX1=PONTOS(:,2);
+            YY1=PONTOS(:,3);
+            s=Ligacoes(:,1)';
+            t=Ligacoes(:,2)';
+            size_geral=size(Ligacoes,1);
+            %Comprimento da ligacao
+                    %weights=C1(:,2);       
+            %Numero da ligacao
+                    weights=Ligacoes(:,3); 
+            %Nome da Peça
+                    %z=size_geral;
+                    %Pl=P';
+                    %weights=P; 
+            
+            G= graph(s',t',weights');
+                    plot(app.UIaxes1,G,'XData',XX1,'YData',YY1,...
+                                                 'NodeLabel',{},...
+                                                   'EdgeLabel',G.Edges.Weight,...
+                                                     'EdgeColor','k',...
+                                                        'MarkerSize',1)
+                    hold(app.UIaxes1,'on');
+                    plot(app.UIaxes1,terca(:,1),terca(:,2),'s','MarkerSize',7,'Color','k')
+                    XLIM=round(L+1,0);
+                    YLIM=round(H,0);
+                    ax = app.UIaxes1;
+                    ax.Title.String = 'TESOURA';
+                    ax.DataAspectRatio = [1 1 1];
+                    ax.XLabel.String = 'Largura (m)';
+                    ax.YLabel.String = 'Altura (m)';
+                    ax.XLim=[-0.2 L];
+                    ax.YLim=[Ag-0.3 YLIM];
+        end
+
+        % Button pushed function: DadosIniciaisButton
+        function DadosIniciaisButtonPushed(app, event)
+            [image_rgb] = imread('dados_iniciais.jpg');
+
+% Kk=[0 0];
+
+
+% cla(app.UIaxes1,'reset')
+% cla(app.UIaxes1,'reset')
+% plot(app.UIaxes1,Kk)
+% hold(app.UIaxes1,'on');
+K=imshow(image_rgb)
+        end
+
+        % Callback function
+        function SalvarButtonPushed(app, event)
+%% SALVAR COTACAO
+%% SALVAR COTACAO    
+
+MM3_table=getappdata(0,'MM3_table');
+nomecell=app.NomedaCotaoTextArea.Value; 
+nomestr = char(nomecell);
+arq_final='.txt';
+fname = [nomestr arq_final];
+writetable(MM3_table,fname)  ;
+        end
+
+        % Callback function
+        function LoadButtonPushed(app, event)
+% LOAD COTACAO
+% LOAD COTACAO
+
+nomecell=app.NomedaCotaoTextArea.Value; 
+nomestr = char(nomecell);
+arq_final='.txt';
+fname = [nomestr arq_final];
+MM3_table = readtable(fname,'Format','%s%s%s%s');
+app.TabelaValores.Data=MM3_table;  
+        end
+
+        % Button pushed function: VERBARRASButton
+        function VERBARRASButtonPushed(app, event)
+%% PLOT DAS BARRAS
+%% PLOT DAS BARRAS
+%%GET DA FUNCAO PROGRAM        
+                % GET Dados Iniciais GALPAO 3D
+                L=getappdata(0,'L');
+                Ag=getappdata(0,'Ag'); 
+                At=getappdata(0,'At');
+                Nn=getappdata(0,'Nn');
+                CPp=getappdata(0,'CPp');
+                dT=getappdata(0,'dT');
+                h=getappdata(0,'h'); 
+                a=getappdata(0,'a');
+                Cg=getappdata(0,'Cg');
+                Ny=getappdata(0,'Ny');
+                Nc=getappdata(0,'Nc');
+                Ncs=getappdata(0,'Ncs');
+                Ncl=getappdata(0,'Ncl');
+                Ncv=getappdata(0,'Nv');
+                Npo=getappdata(0,'Npo');
+                Nv=getappdata(0,'Nv');
+%% FUNCAO PROGRAM 
+%                [PONTOS Ligacoes terca C1 e H Npp CPp P Mt Mtt]=program(app,L,Ag,At,Nn,dT,h,Nv,Npo,a,Cg,Ny,Nc,Ncs,Ncl);
+               
+               [PONTOS Ligacoes terca terca2a C1 e H Npp CPp P Mt Mtt B]=program(app,L,Ag,At,Nn,dT,h,Nv,Npo,a,Cg,Ny,Nc,Ncs,Ncl);
+%% Limpeza Axes1
+            cla(app.UIaxes1,'reset')
+%% CALCULANDO BAR                       
+                
+                
+%%%%%%%% PLOT BARRAS
+                    bar(app.UIaxes1,B,'stacked');
+                    xlabel(app.UIaxes1,'Numero da Barra (nº)');
+                    ylabel(app.UIaxes1,'Comprimento da Barra (m)'); 
+                    title(app.UIaxes1,'Barras Utilizadas');
+                    legend(app.UIaxes1,'Pi','Pb','Db','Pb2','D','Mc','Dc','M','Cc','BS','BI')
+        end
+
+        % Cell edit callback: TabelaValores
+        function TabelaValoresCellEdit(app, event)
+            indices = event.Indices;
+            newData = event.NewData;
+            
+            
+            Barras(1,1)=table2array(app.TabelaValores.Data(1,3))
+            Barras(2,1)=table2array(app.TabelaValores.Data(2,3))
+            Valor(1,1)=table2array(app.TabelaValores.Data(1,4))
+            Valor(2,1)=table2array(app.TabelaValores.Data(2,4))
+            
+            app.TabelaValores.Data(1,5)=array2table(Valor(1,1)*Barras(1,1))
+            app.TabelaValores.Data(2,5)=array2table(Valor(2,1)*Barras(2,1))
+            app.TabelaValores.Data(3,5)=array2table(Valor(1,1)*Barras(1,1)+Valor(2,1)*Barras(2,1))
+        end
+    end
+
+    % Component initialization
+    methods (Access = private)
+
+        % Create UIFigure and components
+        function createComponents(app)
+
+            % Create UIFigure and hide until all components are created
+            app.UIFigure = uifigure('Visible', 'off');
+            app.UIFigure.Color = [1 1 1];
+            app.UIFigure.Position = [100 100 1223 796];
+            app.UIFigure.Name = 'UI Figure';
+            app.UIFigure.Scrollable = 'on';
+
+            % Create Nieto
+            app.Nieto = uipanel(app.UIFigure);
+            app.Nieto.Title = 'PGnieto.3.02v - Nieto Engenharia';
+            app.Nieto.Scrollable = 'on';
+            app.Nieto.Position = [1 9 1213 771];
+
+            % Create DadosIniciaisButton
+            app.DadosIniciaisButton = uibutton(app.Nieto, 'push');
+            app.DadosIniciaisButton.ButtonPushedFcn = createCallbackFcn(app, @DadosIniciaisButtonPushed, true);
+            app.DadosIniciaisButton.Position = [23 676 57 36];
+            app.DadosIniciaisButton.Text = {'Dados'; ' Iniciais'};
+
+            % Create LButton
+            app.LButton = uibutton(app.Nieto, 'push');
+            app.LButton.ButtonPushedFcn = createCallbackFcn(app, @LButtonPushed2, true);
+            app.LButton.FontSize = 14;
+            app.LButton.FontWeight = 'bold';
+            app.LButton.Position = [14 653 30 24];
+            app.LButton.Text = 'L';
+
+            % Create AgButton
+            app.AgButton = uibutton(app.Nieto, 'push');
+            app.AgButton.ButtonPushedFcn = createCallbackFcn(app, @AgButtonPushed, true);
+            app.AgButton.FontSize = 14;
+            app.AgButton.FontWeight = 'bold';
+            app.AgButton.Position = [13 630 31 24];
+            app.AgButton.Text = 'Ag';
+
+            % Create Label
+            app.Label = uilabel(app.Nieto);
+            app.Label.HorizontalAlignment = 'right';
+            app.Label.FontSize = 18;
+            app.Label.Position = [17 610 25 22];
+            app.Label.Text = '';
+
+            % Create IN_At
+            app.IN_At = uieditfield(app.Nieto, 'numeric');
+            app.IN_At.ValueChangedFcn = createCallbackFcn(app, @IN_AtValueChanged, true);
+            app.IN_At.Position = [44 609 42 22];
+            app.IN_At.Value = 1;
+
+            % Create AtButton
+            app.AtButton = uibutton(app.Nieto, 'push');
+            app.AtButton.ButtonPushedFcn = createCallbackFcn(app, @AtButtonPushed, true);
+            app.AtButton.FontSize = 14;
+            app.AtButton.FontWeight = 'bold';
+            app.AtButton.Position = [13 608 31 24];
+            app.AtButton.Text = 'At';
+
+            % Create IN_Ag
+            app.IN_Ag = uieditfield(app.Nieto, 'numeric');
+            app.IN_Ag.ValueChangedFcn = createCallbackFcn(app, @IN_AgValueChanged, true);
+            app.IN_Ag.Position = [44 630 42 22];
+            app.IN_Ag.Value = 5;
+
+            % Create IN_L
+            app.IN_L = uieditfield(app.Nieto, 'numeric');
+            app.IN_L.ValueChangedFcn = createCallbackFcn(app, @IN_LValueChanged2, true);
+            app.IN_L.Position = [44 651 42 22];
+            app.IN_L.Value = 10;
+
+            % Create Label_2
+            app.Label_2 = uilabel(app.Nieto);
+            app.Label_2.HorizontalAlignment = 'right';
+            app.Label_2.FontSize = 18;
+            app.Label_2.Position = [16 588 25 22];
+            app.Label_2.Text = '';
+
+            % Create IN_Nn
+            app.IN_Nn = uieditfield(app.Nieto, 'numeric');
+            app.IN_Nn.ValueChangedFcn = createCallbackFcn(app, @IN_NnValueChanged2, true);
+            app.IN_Nn.Position = [45 588 42 22];
+            app.IN_Nn.Value = 3;
+
+            % Create NnButton
+            app.NnButton = uibutton(app.Nieto, 'push');
+            app.NnButton.ButtonPushedFcn = createCallbackFcn(app, @NnButtonPushed, true);
+            app.NnButton.FontSize = 14;
+            app.NnButton.FontWeight = 'bold';
+            app.NnButton.Position = [10 587 34 24];
+            app.NnButton.Text = 'Nn';
+
+            % Create Label_3
+            app.Label_3 = uilabel(app.Nieto);
+            app.Label_3.HorizontalAlignment = 'right';
+            app.Label_3.FontSize = 18;
+            app.Label_3.Position = [15 567 25 22];
+            app.Label_3.Text = '';
+
+            % Create IN_dT
+            app.IN_dT = uieditfield(app.Nieto, 'numeric');
+            app.IN_dT.ValueChangedFcn = createCallbackFcn(app, @IN_dTValueChanged, true);
+            app.IN_dT.Position = [44 567 42 22];
+            app.IN_dT.Value = 2;
+
+            % Create dTButton
+            app.dTButton = uibutton(app.Nieto, 'push');
+            app.dTButton.ButtonPushedFcn = createCallbackFcn(app, @dTButtonPushed, true);
+            app.dTButton.FontSize = 14;
+            app.dTButton.FontWeight = 'bold';
+            app.dTButton.Position = [11 566 33 24];
+            app.dTButton.Text = 'dT';
+
+            % Create Label_4
+            app.Label_4 = uilabel(app.Nieto);
+            app.Label_4.HorizontalAlignment = 'right';
+            app.Label_4.FontSize = 18;
+            app.Label_4.Position = [15 546 25 22];
+            app.Label_4.Text = '';
+
+            % Create IN_h
+            app.IN_h = uieditfield(app.Nieto, 'numeric');
+            app.IN_h.ValueChangedFcn = createCallbackFcn(app, @IN_hValueChanged, true);
+            app.IN_h.Position = [44 546 42 22];
+            app.IN_h.Value = 0.4;
+
+            % Create hButton
+            app.hButton = uibutton(app.Nieto, 'push');
+            app.hButton.ButtonPushedFcn = createCallbackFcn(app, @hButtonPushed, true);
+            app.hButton.FontSize = 14;
+            app.hButton.FontWeight = 'bold';
+            app.hButton.Position = [13 546 31 24];
+            app.hButton.Text = 'h';
+
+            % Create Label_5
+            app.Label_5 = uilabel(app.Nieto);
+            app.Label_5.HorizontalAlignment = 'right';
+            app.Label_5.FontSize = 18;
+            app.Label_5.Position = [15 525 25 22];
+            app.Label_5.Text = '';
+
+            % Create IN_a
+            app.IN_a = uieditfield(app.Nieto, 'numeric');
+            app.IN_a.ValueChangedFcn = createCallbackFcn(app, @IN_aValueChanged, true);
+            app.IN_a.Position = [44 525 42 22];
+            app.IN_a.Value = 0.3;
+
+            % Create aButton
+            app.aButton = uibutton(app.Nieto, 'push');
+            app.aButton.ButtonPushedFcn = createCallbackFcn(app, @aButtonPushed, true);
+            app.aButton.FontSize = 14;
+            app.aButton.FontWeight = 'bold';
+            app.aButton.Position = [13 524 31 24];
+            app.aButton.Text = 'a';
+
+            % Create Label_6
+            app.Label_6 = uilabel(app.Nieto);
+            app.Label_6.HorizontalAlignment = 'right';
+            app.Label_6.FontSize = 18;
+            app.Label_6.Position = [15 483 25 22];
+            app.Label_6.Text = '';
+
+            % Create IN_Npo
+            app.IN_Npo = uieditfield(app.Nieto, 'numeric');
+            app.IN_Npo.ValueChangedFcn = createCallbackFcn(app, @IN_NpoValueChanged, true);
+            app.IN_Npo.Position = [44 483 42 22];
+            app.IN_Npo.Value = 3;
+
+            % Create NpoButton
+            app.NpoButton = uibutton(app.Nieto, 'push');
+            app.NpoButton.ButtonPushedFcn = createCallbackFcn(app, @NpoButtonPushed, true);
+            app.NpoButton.FontSize = 14;
+            app.NpoButton.FontWeight = 'bold';
+            app.NpoButton.Position = [1 481 43 24];
+            app.NpoButton.Text = 'Npo';
+
+            % Create Label_7
+            app.Label_7 = uilabel(app.Nieto);
+            app.Label_7.HorizontalAlignment = 'right';
+            app.Label_7.FontSize = 18;
+            app.Label_7.Position = [15 504 25 22];
+            app.Label_7.Text = '';
+
+            % Create IN_Cg
+            app.IN_Cg = uieditfield(app.Nieto, 'numeric');
+            app.IN_Cg.ValueChangedFcn = createCallbackFcn(app, @IN_CgValueChanged, true);
+            app.IN_Cg.Position = [44 504 42 22];
+            app.IN_Cg.Value = 15;
+
+            % Create CgButton
+            app.CgButton = uibutton(app.Nieto, 'push');
+            app.CgButton.ButtonPushedFcn = createCallbackFcn(app, @CgButtonPushed, true);
+            app.CgButton.FontSize = 14;
+            app.CgButton.FontWeight = 'bold';
+            app.CgButton.Position = [10 503 34 24];
+            app.CgButton.Text = 'Cg';
+
+            % Create ProjetoBanzosParalelosTipo1Label
+            app.ProjetoBanzosParalelosTipo1Label = uilabel(app.Nieto);
+            app.ProjetoBanzosParalelosTipo1Label.FontSize = 26;
+            app.ProjetoBanzosParalelosTipo1Label.Position = [8 714 382 33];
+            app.ProjetoBanzosParalelosTipo1Label.Text = 'Projeto Banzos Paralelos Tipo 1';
+
+            % Create PeaseMedidasLabel
+            app.PeaseMedidasLabel = uilabel(app.Nieto);
+            app.PeaseMedidasLabel.FontSize = 18;
+            app.PeaseMedidasLabel.Position = [4 451 144 22];
+            app.PeaseMedidasLabel.Text = 'Peças e Medidas';
+
+            % Create Tabela_Med_Tesoura
+            app.Tabela_Med_Tesoura = uitable(app.Nieto);
+            app.Tabela_Med_Tesoura.ColumnName = {'Peça'; 'Nome'; 'Descrição'; 'cm'; 'cm Total'};
+            app.Tabela_Med_Tesoura.ColumnWidth = {45, 55, 75, 50, 'auto'};
+            app.Tabela_Med_Tesoura.RowName = {};
+            app.Tabela_Med_Tesoura.Position = [7 207 269 243];
+
+            % Create SignificadoTextAreaLabel
+            app.SignificadoTextAreaLabel = uilabel(app.Nieto);
+            app.SignificadoTextAreaLabel.HorizontalAlignment = 'right';
+            app.SignificadoTextAreaLabel.Position = [111 685 64 22];
+            app.SignificadoTextAreaLabel.Text = 'Significado';
+
+            % Create SigTextArea
+            app.SigTextArea = uitextarea(app.Nieto);
+            app.SigTextArea.ValueChangedFcn = createCallbackFcn(app, @SigTextAreaValueChanged, true);
+            app.SigTextArea.Editable = 'off';
+            app.SigTextArea.Position = [111 651 161 33];
+
+            % Create DistnciaentreTerasLabel
+            app.DistnciaentreTerasLabel = uilabel(app.Nieto);
+            app.DistnciaentreTerasLabel.HorizontalAlignment = 'center';
+            app.DistnciaentreTerasLabel.Position = [111 603 89 28];
+            app.DistnciaentreTerasLabel.Text = {'Distância entre '; 'Terças'};
+
+            % Create TabelaTercas
+            app.TabelaTercas = uitextarea(app.Nieto);
+            app.TabelaTercas.Editable = 'off';
+            app.TabelaTercas.Position = [102 483 107 121];
+
+            % Create VERPORTICOButton
+            app.VERPORTICOButton = uibutton(app.Nieto, 'push');
+            app.VERPORTICOButton.ButtonPushedFcn = createCallbackFcn(app, @VERPORTICOButtonPushed, true);
+            app.VERPORTICOButton.Position = [399 673 71 36];
+            app.VERPORTICOButton.Text = {'VER '; 'PORTICO'};
+
+            % Create Button_L
+            app.Button_L = uibutton(app.Nieto, 'push');
+            app.Button_L.ButtonPushedFcn = createCallbackFcn(app, @Button_LPushed, true);
+            app.Button_L.Position = [469 673 71 36];
+            app.Button_L.Text = {'VER'; ' MEDIDAS'};
+
+            % Create VERNPEAButton
+            app.VERNPEAButton = uibutton(app.Nieto, 'push');
+            app.VERNPEAButton.ButtonPushedFcn = createCallbackFcn(app, @VERNPEAButtonPushed, true);
+            app.VERNPEAButton.Position = [539 673 60 36];
+            app.VERNPEAButton.Text = {'VER '; 'Nº PEÇA'};
+
+            % Create VERNLIGAOButton
+            app.VERNLIGAOButton = uibutton(app.Nieto, 'push');
+            app.VERNLIGAOButton.ButtonPushedFcn = createCallbackFcn(app, @VERNLIGAOButtonPushed, true);
+            app.VERNLIGAOButton.Position = [598 673 78 36];
+            app.VERNLIGAOButton.Text = {'VER '; 'Nº LIGAÇÃO'};
+
+            % Create VERVISTA3DButton
+            app.VERVISTA3DButton = uibutton(app.Nieto, 'push');
+            app.VERVISTA3DButton.ButtonPushedFcn = createCallbackFcn(app, @VERVISTA3DButtonPushed, true);
+            app.VERVISTA3DButton.Position = [675 673 61 36];
+            app.VERVISTA3DButton.Text = {'VER '; 'VISTA 3D'};
+
+            % Create UIaxes1
+            app.UIaxes1 = uiaxes(app.Nieto);
+            title(app.UIaxes1, 'TESTE')
+            xlabel(app.UIaxes1, 'X')
+            ylabel(app.UIaxes1, 'Y')
+            app.UIaxes1.Position = [283 126 902 546];
+
+            % Create TabelaValores
+            app.TabelaValores = uitable(app.Nieto);
+            app.TabelaValores.ColumnName = {'Perfil'; 'm Total'; 'Barras'; 'Valor R$ (6m)'; 'Total (R$)'};
+            app.TabelaValores.RowName = {};
+            app.TabelaValores.ColumnEditable = [true false false true false];
+            app.TabelaValores.CellEditCallback = createCallbackFcn(app, @TabelaValoresCellEdit, true);
+            app.TabelaValores.Position = [8 10 382 107];
+
+            % Create BarraseValoresLabel
+            app.BarraseValoresLabel = uilabel(app.Nieto);
+            app.BarraseValoresLabel.FontSize = 18;
+            app.BarraseValoresLabel.Position = [8 116 138 22];
+            app.BarraseValoresLabel.Text = 'Barras e Valores';
+
+            % Create VERBARRASButton
+            app.VERBARRASButton = uibutton(app.Nieto, 'push');
+            app.VERBARRASButton.ButtonPushedFcn = createCallbackFcn(app, @VERBARRASButtonPushed, true);
+            app.VERBARRASButton.Position = [735 673 60 36];
+            app.VERBARRASButton.Text = {'VER'; ' BARRAS'};
+
+            % Show the figure after all components are created
+            app.UIFigure.Visible = 'on';
+        end
+    end
+
+    % App creation and deletion
+    methods (Access = public)
+
+        % Construct app
+        function app = app3_02
+
+            % Create UIFigure and components
+            createComponents(app)
+
+            % Register the app with App Designer
+            registerApp(app, app.UIFigure)
+
+            % Execute the startup function
+            runStartupFcn(app, @startupFcn_axes1)
+
+            if nargout == 0
+                clear app
+            end
+        end
+
+        % Code that executes before app deletion
+        function delete(app)
+
+            % Delete UIFigure when app is deleted
+            delete(app.UIFigure)
+        end
+    end
+end
