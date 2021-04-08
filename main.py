@@ -77,11 +77,11 @@ frame1.grid(row=0, column=0, sticky='N')
 frame2 = tk.LabelFrame(root, text="LabelFrame 2", bg='#3c3e4d')
 frame2.grid(row=1, column=0, sticky='N')
 
-df = pd.DataFrame({'A': range(20),
-                   'B': [math.sin(i) for i in range(20)]
-                   }, index=range(20))
 x2 = np.array(range(50))
 y2 = x2*3
+df = pd.DataFrame(
+    {'A': x2, 'B': y2}, index=range(50))
+
 
 # fig = Figure()
 figure1 = plt.Figure(figsize=(5, 4), dpi=80)
